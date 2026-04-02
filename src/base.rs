@@ -24,7 +24,8 @@ impl<T: Float + RealField> Ray<T> {
 
 // MARK: Hit
 
-/// Ray–triangle intersection result (barycentric coords (b1, b2)).
+/// Ray–triangle intersection result with the distance to intersection
+/// `t` at the barycentric coordinates (u, v).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hit<T: Float + RealField> {
     pub t: T,
