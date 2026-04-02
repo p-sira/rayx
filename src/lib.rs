@@ -31,8 +31,12 @@ impl<T: Float + RealField> Triangle<T> {
     /// Build a triangle and store the precomputed transform.
     ///
     /// Note: The vertices are not stored.
-    pub fn new(v1: Vector3<T>, v2: Vector3<T>, v3: Vector3<T>) -> Result<Self, TriangleError> {
-        let m = intersect::compute_baldwin_weber_transform(v1, v2, v3)?;
+    pub fn new(
+        v1: impl Into<Vector3<T>>,
+        v2: impl Into<Vector3<T>>,
+        v3: impl Into<Vector3<T>>,
+    ) -> Result<Self, TriangleError> {
+        let m = intersect::compute_baldwin_weber_transform(v1.into(), v2.into(), v3.into())?;
         Ok(Self { m })
     }
 
@@ -80,14 +84,9 @@ mod tests {
     #[test]
     fn basic_hit_matches_expected_barycentrics() {
         // Canonical triangle in z=0 plane: (0,0,0), (1,0,0), (0,1,0)
-        let tri = Triangle::new(
-            Vector3::new(0.0, 0.0, 0.0),
-            Vector3::new(1.0, 0.0, 0.0),
-            Vector3::new(0.0, 1.0, 0.0),
-        )
-        .unwrap();
+        let tri = Triangle::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]).unwrap();
 
-        let ray = Ray::new(Vector3::new(0.25, 0.25, 1.0), Vector3::new(0.0, 0.0, -1.0));
+        let ray = Ray::new([0.25, 0.25, 1.0], [0.0, 0.0, -1.0]);
         let hit = tri.intersect(ray, 0.0, 10.0).unwrap();
         assert!(approx(hit.t, 1.0, 1e-12));
         assert!(approx(hit.u, 0.25, 1e-12));

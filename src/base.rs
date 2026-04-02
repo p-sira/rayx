@@ -12,8 +12,11 @@ pub struct Ray<T: Float + RealField> {
 
 impl<T: Float + RealField> Ray<T> {
     #[inline]
-    pub fn new(origin: Vector3<T>, dir: Vector3<T>) -> Self {
-        Self { origin, dir }
+    pub fn new(origin: impl Into<Vector3<T>>, dir: impl Into<Vector3<T>>) -> Self {
+        Self {
+            origin: origin.into(),
+            dir: dir.into(),
+        }
     }
 
     #[inline]
