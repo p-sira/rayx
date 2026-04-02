@@ -6,6 +6,7 @@ documentation = "https://docs.rs/rayx"
 homepage = "https://github.com/p-sira/rayx"
 repository = "https://github.com/p-sira/rayx"
 license = "BSD-3-Clause"
+description = "Fast ray intersection using Baldwin-Weber algorithm"
 
 keywords = [
     "raytracing",
