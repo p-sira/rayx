@@ -40,7 +40,7 @@ fn main() {
     let hit = tri.intersect(ray, 0.0, 10.0).unwrap();
 
     assert!((hit.t - 1.0).abs() < 1e-6);
-    assert!((hit.b1 - 0.25).abs() < 1e-6);
-    assert!((hit.b2 - 0.25).abs() < 1e-6);
+    assert!((hit.u - 0.25).abs() < 1e-6);
+    assert!((hit.v - 0.25).abs() < 1e-6);
 }
 ```
