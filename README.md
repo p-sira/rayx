@@ -2,7 +2,7 @@
 
 `rayx` is a small Rust ray intersection library using **Baldwin-Weber's Fast Ray-Triangle Intersections by Coordinate Transformation** ([JCGT 2016] (https://jcgt.org/published/0005/03/03/)).
 
-<p align="center">
+<p>
     <a href="https://opensource.org/license/BSD-3-clause" style="text-decoration:none">
         <img src="https://img.shields.io/badge/License-BSD--3--Clause-brightgreen.svg" alt="License">
     </a>
