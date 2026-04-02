@@ -1,6 +1,6 @@
 //! RayX: a small, fast ray intersection library.
 //!
-//! `rayx` is a small Rust ray intersection library using **Baldwin-Weber's Fast Ray-Triangle Intersections by Coordinate Transformation** ([JCGT 2016] (https://jcgt.org/published/0005/03/03/)).
+//! `rayx` is a small Rust ray intersection library using **Baldwin-Weber's Fast Ray-Triangle Intersections by Coordinate Transformation** ([JCGT 2016](https://jcgt.org/published/0005/03/03/)).
 //!
 //! The precompute costs a little memory per triangle but reduces per-ray arithmetic.
 
