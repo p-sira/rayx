@@ -24,6 +24,8 @@ categories = [
     "no-std"
 ]
 
+include = ["/src", "/LICENSE"]
+
 [features]
 default = ["std"]
 std = ["num-traits/std", "nalgebra/std"]
