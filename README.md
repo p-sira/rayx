@@ -25,7 +25,6 @@ cargo add rayx
 Example:
 
 ```rust
-use nalgebra::Vector3;
 use rayx::{Ray, Triangle};
 
 let tri = Triangle::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]).unwrap();
