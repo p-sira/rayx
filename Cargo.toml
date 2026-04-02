@@ -18,7 +18,7 @@ keywords = [
 
 categories = [
     "graphics",
-    "science::math",
+    "mathematics",
     "game-development",
     "algorithms",
     "no-std"
