@@ -90,9 +90,9 @@ mod tests {
         let ray = Ray::new(Vector3::new(0.25, 0.25, 1.0), Vector3::new(0.0, 0.0, -1.0));
         let hit = tri.intersect(ray, 0.0, 10.0).unwrap();
         assert!(approx(hit.t, 1.0, 1e-6));
-        assert!(approx(hit.b1, 0.25, 1e-6));
-        assert!(approx(hit.b2, 0.25, 1e-6));
-        assert!(approx(hit.b0(), 0.5, 1e-6));
+        assert!(approx(hit.u, 0.25, 1e-6));
+        assert!(approx(hit.v, 0.25, 1e-6));
+        assert!(approx(hit.w(), 0.5, 1e-6));
     }
 
     #[test]
@@ -132,8 +132,8 @@ mod tests {
                 (None, None) => {}
                 (Some(ha), Some(hb)) => {
                     assert!(approx(ha.t, hb.t, 1e-4), "t mismatch: {ha:?} vs {hb:?}");
-                    assert!(approx(ha.b1, hb.b1, 1e-3), "b1 mismatch: {ha:?} vs {hb:?}");
-                    assert!(approx(ha.b2, hb.b2, 1e-3), "b2 mismatch: {ha:?} vs {hb:?}");
+                    assert!(approx(ha.u, hb.u, 1e-3), "b1 mismatch: {ha:?} vs {hb:?}");
+                    assert!(approx(ha.v, hb.v, 1e-3), "b2 mismatch: {ha:?} vs {hb:?}");
                 }
                 _ => panic!("disagreement: precomputed={a:?}, mt={b:?}"),
             }

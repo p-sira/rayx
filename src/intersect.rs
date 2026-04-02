@@ -121,7 +121,7 @@ pub fn intersect_baldwin_weber<T: Float + RealField>(
         return None;
     }
 
-    Some(Hit { t, b1, b2 })
+    Some(Hit { t, u: b1, v: b2 })
 }
 
 /// Möller–Trumbore ray–triangle intersection algorithm.
@@ -156,5 +156,5 @@ pub fn intersect_moller_trumbore<T: Float + RealField>(
     if !(t_min..=t_max).contains(&t) {
         return None;
     }
-    Some(Hit { t, b1: u, b2: v })
+    Some(Hit { t, u, v })
 }

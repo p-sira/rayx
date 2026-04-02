@@ -28,13 +28,13 @@ impl<T: Float + RealField> Ray<T> {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hit<T: Float + RealField> {
     pub t: T,
-    pub b1: T,
-    pub b2: T,
+    pub u: T,
+    pub v: T,
 }
 
 impl<T: Float + RealField> Hit<T> {
     #[inline]
-    pub fn b0(self) -> T {
-        T::one() - self.b1 - self.b2
+    pub fn w(self) -> T {
+        T::one() - self.u - self.v
     }
 }
