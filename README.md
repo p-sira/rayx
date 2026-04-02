@@ -28,19 +28,12 @@ Example:
 use nalgebra::Vector3;
 use rayx::{Ray, Triangle};
 
-fn main() {
-    let tri = Triangle::new(
-        Vector3::new(0.0, 0.0, 0.0),
-        Vector3::new(1.0, 0.0, 0.0),
-        Vector3::new(0.0, 1.0, 0.0),
-    )
-    .unwrap();
+let tri = Triangle::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]).unwrap();
 
-    let ray = Ray::new(Vector3::new(0.25, 0.25, 1.0), Vector3::new(0.0, 0.0, -1.0));
-    let hit = tri.intersect(ray, 0.0, 10.0).unwrap();
+let ray = Ray::new([0.25, 0.25, 1.0], [0.0, 0.0, -1.0]);
+let hit = tri.intersect(ray, 0.0, 10.0).unwrap();
 
-    assert!((hit.t - 1.0).abs() < 1e-6);
-    assert!((hit.u - 0.25).abs() < 1e-6);
-    assert!((hit.v - 0.25).abs() < 1e-6);
-}
+assert!((hit.t - 1.0).abs() < 1e-12);
+assert!((hit.u - 0.25).abs() < 1e-12);
+assert!((hit.v - 0.25).abs() < 1e-12);
 ```
