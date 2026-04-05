@@ -20,7 +20,7 @@ use num_traits::Float;
 /// Triangle with precomputed transform coefficients for fast intersection tests.
 ///
 /// Stores the top 3 rows of the global→barycentric transform matrix (12 coefficients).
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Triangle<T: Float + RealField> {
     // Row-major 3x4 matrix, applied as:
     // [x'; y'; z'] = M * [x y z 1]^T

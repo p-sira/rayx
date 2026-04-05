@@ -1,6 +1,6 @@
 [package]
 name = "rayx"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 documentation = "https://docs.rs/rayx"
 homepage = "https://github.com/p-sira/rayx"
@@ -8,20 +8,14 @@ repository = "https://github.com/p-sira/rayx"
 license = "BSD-3-Clause"
 description = "Fast ray intersection using Baldwin-Weber algorithm"
 
-keywords = [
-    "raytracing",
-    "intersection",
-    "geometry",
-    "graphics",
-    "triangle"
-]
+keywords = ["raytracing", "intersection", "geometry", "graphics", "triangle"]
 
 categories = [
     "graphics",
     "mathematics",
     "game-development",
     "algorithms",
-    "no-std"
+    "no-std",
 ]
 
 include = ["/src", "/LICENSE"]
