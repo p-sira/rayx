@@ -67,8 +67,8 @@ use num_traits::Float;
 /// Triangle with precomputed transform coefficients for fast intersection tests.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Triangle<T: Float + RealField = f32> {
-    pub m: nalgebra::Matrix3<T>,
-    pub v: nalgebra::Vector3<T>,
+    m: nalgebra::Matrix3<T>,
+    v: nalgebra::Vector3<T>,
 }
 
 impl<T: Float + RealField> Triangle<T> {
@@ -94,6 +94,31 @@ impl<T: Float + RealField> Triangle<T> {
     #[inline]
     pub fn intersect(&self, ray: Ray<T>, t_min: T, t_max: T) -> Option<Hit<T>> {
         intersect::intersect_baldwin_weber(&self.m, &self.v, ray, t_min, t_max)
+    }
+
+    /// Reconstruct the original triangle vertices from the precomputed transform.
+    #[inline]
+    pub fn reconstruct_vertices(&self) -> [Vector3<T>; 3] {
+        let inv_m = self
+            .m
+            .try_inverse()
+            .expect("Cannot invert the triangle matrix");
+
+        let v1 = inv_m * (-self.v);
+        let v2 = v1 + inv_m.column(0);
+        let v3 = v1 + inv_m.column(1);
+
+        [v1, v2, v3]
+    }
+
+    #[inline]
+    pub fn m(&self) -> nalgebra::Matrix3<T> {
+        self.m
+    }
+
+    #[inline]
+    pub fn v(&self) -> nalgebra::Vector3<T> {
+        self.v
     }
 }
 
@@ -186,5 +211,27 @@ mod tests {
                 _ => panic!("disagreement: precomputed={a:?}, mt={b:?}"),
             }
         }
+    }
+
+    #[test]
+    fn reconstruct_vertices_matches_input() {
+        let v0 = Vector3::new(-1.2, 0.5, 3.1);
+        let v1 = Vector3::new(2.4, -1.1, 0.8);
+        let v2 = Vector3::new(0.3, 4.2, -1.5);
+
+        let tri = Triangle::new(v0, v1, v2).unwrap();
+        let reconstructed = tri.reconstruct_vertices();
+
+        assert!(approx(reconstructed[0].x, v0.x, 1e-12));
+        assert!(approx(reconstructed[0].y, v0.y, 1e-12));
+        assert!(approx(reconstructed[0].z, v0.z, 1e-12));
+
+        assert!(approx(reconstructed[1].x, v1.x, 1e-12));
+        assert!(approx(reconstructed[1].y, v1.y, 1e-12));
+        assert!(approx(reconstructed[1].z, v1.z, 1e-12));
+
+        assert!(approx(reconstructed[2].x, v2.x, 1e-12));
+        assert!(approx(reconstructed[2].y, v2.y, 1e-12));
+        assert!(approx(reconstructed[2].z, v2.z, 1e-12));
     }
 }
