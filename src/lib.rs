@@ -33,7 +33,7 @@ pub mod intersect;
 
 pub use base::{Hit, Ray};
 
-use nalgebra::{RealField, Vector3};
+use nalgebra::{Matrix3x4, RealField, Vector3};
 use num_traits::Float;
 
 /// Triangle with precomputed transform coefficients for fast intersection tests.
@@ -43,7 +43,7 @@ use num_traits::Float;
 pub struct Triangle<T: Float + RealField = f64> {
     // Row-major 3x4 matrix, applied as:
     // [x'; y'; z'] = M * [x y z 1]^T
-    pub m: [T; 12],
+    pub m: Matrix3x4<T>,
 }
 
 impl<T: Float + RealField> Triangle<T> {

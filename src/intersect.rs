@@ -1,4 +1,4 @@
-use nalgebra::{RealField, Vector3};
+use nalgebra::{Matrix3x4, RealField, Vector3};
 use num_traits::Float;
 
 use crate::{Hit, Ray, TriangleError};
@@ -10,7 +10,7 @@ pub fn compute_baldwin_weber_transform<T: Float + RealField>(
     v1: Vector3<T>,
     v2: Vector3<T>,
     v3: Vector3<T>,
-) -> Result<[T; 12], TriangleError> {
+) -> Result<Matrix3x4<T>, TriangleError> {
     let e1 = v2 - v1;
     let e2 = v3 - v1;
     let n = e1.cross(&e2);
@@ -19,12 +19,10 @@ pub fn compute_baldwin_weber_transform<T: Float + RealField>(
         return Err(TriangleError::Degenerate);
     }
 
-    let ax = Float::abs(n.x);
-    let ay = Float::abs(n.y);
-    let az = Float::abs(n.z);
+    let a = n.abs();
 
     // Paper defines three cases for inverse of T based on the major axis
-    let m = if ax >= ay && ax >= az {
+    let m = if a.x >= a.y && a.x >= a.z {
         let inv = T::one() / n.x;
         let v3xv1 = v3.cross(&v1).x;
         let v2xv1 = v2.cross(&v1).x;
@@ -42,7 +40,7 @@ pub fn compute_baldwin_weber_transform<T: Float + RealField>(
             n.z * inv,
             (-n.dot(&v1)) * inv,
         ]
-    } else if ay >= az {
+    } else if a.y >= a.z {
         let inv = T::one() / n.y;
         let v3xv1 = v3.cross(&v1).y;
         let v2xv1 = v2.cross(&v1).y;
@@ -80,43 +78,38 @@ pub fn compute_baldwin_weber_transform<T: Float + RealField>(
         ]
     };
 
-    Ok(m)
+    Ok(Matrix3x4::from_row_slice(&m))
 }
 
 /// Baldwin-Weber ray–triangle intersection algorithm.
 #[inline]
 pub fn intersect_baldwin_weber<T: Float + RealField>(
-    m: &[T; 12],
+    m: &Matrix3x4<T>,
     ray: Ray<T>,
     t_min: T,
     t_max: T,
 ) -> Option<Hit<T>> {
-    // Transform origin as point (w=1) and direction as vector (w=0).
-    let ox = m[0] * ray.origin.x + m[1] * ray.origin.y + m[2] * ray.origin.z + m[3];
-    let oy = m[4] * ray.origin.x + m[5] * ray.origin.y + m[6] * ray.origin.z + m[7];
-    let oz = m[8] * ray.origin.x + m[9] * ray.origin.y + m[10] * ray.origin.z + m[11];
-
-    let dx = m[0] * ray.dir.x + m[1] * ray.dir.y + m[2] * ray.dir.z;
-    let dy = m[4] * ray.dir.x + m[5] * ray.dir.y + m[6] * ray.dir.z;
-    let dz = m[8] * ray.dir.x + m[9] * ray.dir.y + m[10] * ray.dir.z;
+    let d = m.fixed_view::<3, 3>(0, 0) * ray.dir;
 
     // Epsilon check prevents division by extremely small numbers or exact zeroes
     // yielding unreliable infinities.
-    if Float::abs(dz) < T::epsilon() {
+    if Float::abs(d.z) < T::epsilon() {
         return None;
     }
 
-    let t = -oz / dz;
+    let o = m.fixed_view::<3, 3>(0, 0) * ray.origin + m.column(3);
+
+    let t = -o.z / d.z;
     if !(t_min..=t_max).contains(&t) {
         return None;
     }
 
-    let b1 = ox + t * dx;
+    let b1 = o.x + t * d.x;
     if b1 < T::zero() || b1 > T::one() {
         return None;
     }
 
-    let b2 = oy + t * dy;
+    let b2 = o.y + t * d.y;
     if b2 < T::zero() || b1 + b2 > T::one() {
         return None;
     }
