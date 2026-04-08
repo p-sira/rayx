@@ -1,6 +1,6 @@
 [package]
 name = "rayx"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2024"
 documentation = "https://docs.rs/rayx"
 homepage = "https://github.com/p-sira/rayx"

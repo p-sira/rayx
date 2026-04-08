@@ -1,8 +1,12 @@
-# 0.1
+# 0.2
 
-## 0.1.3
+## 0.2.0
 
+- Add method to reconstruct vertices from `m` and `v`.
+- Remove public access to the `Triangle`'s fields.
 - Add benchmarks.
+
+# 0.1
 
 ## 0.1.2
 
