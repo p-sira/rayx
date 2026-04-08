@@ -1,5 +1,9 @@
 # 0.1
 
+## 0.1.3
+
+- Add benchmarks.
+
 ## 0.1.2
 
 - Implement `Eq` for `Triangle`.

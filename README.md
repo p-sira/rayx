@@ -14,6 +14,10 @@
     </a>
 </p>
 
+The precompute costs a little memory per triangle but reduces per-ray arithmetic.
+
+On a benchmark on an AMD Ryzen 5 4600H with Radeon Graphics @3.0 GHz running x86_64-unknown-linux-gnu with rustc 1.90.0 at f64 precision on a single core, the **precomputed Baldwin-Weber is about 2.5x faster** than Moller-Trumbore. If we include the triangle initialization time, it is about 1.5x slower. However, the initialization is a one time cost, amortized over many ray intersections.
+
 ## Usage
 
 Install `rayx` with
