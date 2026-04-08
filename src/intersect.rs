@@ -125,6 +125,7 @@ pub fn intersect_baldwin_weber<T: Float + RealField>(
 }
 
 /// Möller–Trumbore ray–triangle intersection algorithm.
+#[inline]
 pub fn intersect_moller_trumbore<T: Float + RealField>(
     v1: Vector3<T>,
     v2: Vector3<T>,

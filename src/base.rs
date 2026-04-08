@@ -5,7 +5,7 @@ use num_traits::Float;
 
 /// A ray with parametric form `o + t*d`.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Ray<T: Float + RealField> {
+pub struct Ray<T: Float + RealField = f64> {
     pub origin: Vector3<T>,
     pub dir: Vector3<T>,
 }
@@ -30,7 +30,7 @@ impl<T: Float + RealField> Ray<T> {
 /// Ray–triangle intersection result with the distance to intersection
 /// `t` at the barycentric coordinates (u, v).
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Hit<T: Float + RealField> {
+pub struct Hit<T: Float + RealField = f64> {
     pub t: T,
     pub u: T,
     pub v: T,
