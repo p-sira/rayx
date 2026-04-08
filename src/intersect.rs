@@ -15,7 +15,10 @@ pub fn compute_baldwin_weber_transform<T: Float + RealField>(
     let e2 = v3 - v1;
     let n = e1.cross(&e2);
 
-    if n.dot(&n) < T::epsilon() {
+    // Threshold for degeneracy should be small enough to allow small valid triangles,
+    // especially in f32 where epsilon() is relatively large (1e-7).
+    let area_eps = T::from(1e-20).unwrap_or_else(T::epsilon);
+    if n.dot(&n) < area_eps {
         return Err(TriangleError::Degenerate);
     }
 
@@ -84,12 +87,13 @@ pub fn compute_baldwin_weber_transform<T: Float + RealField>(
 /// Baldwin-Weber ray–triangle intersection algorithm.
 #[inline]
 pub fn intersect_baldwin_weber<T: Float + RealField>(
-    m: &Matrix3x4<T>,
+    m: &nalgebra::Matrix3<T>,
+    v: &nalgebra::Vector3<T>,
     ray: Ray<T>,
     t_min: T,
     t_max: T,
 ) -> Option<Hit<T>> {
-    let d = m.fixed_view::<3, 3>(0, 0) * ray.dir;
+    let d = m * ray.dir;
 
     // Epsilon check prevents division by extremely small numbers or exact zeroes
     // yielding unreliable infinities.
@@ -97,7 +101,7 @@ pub fn intersect_baldwin_weber<T: Float + RealField>(
         return None;
     }
 
-    let o = m.fixed_view::<3, 3>(0, 0) * ray.origin + m.column(3);
+    let o = m * ray.origin + v;
 
     let t = -o.z / d.z;
     if !(t_min..=t_max).contains(&t) {

@@ -1,64 +1,76 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use nalgebra::Vector3;
-use rayx::{Ray, Triangle, intersect};
+use criterion::{Criterion, criterion_group, criterion_main};
 
-fn bench_intersection(c: &mut Criterion) {
-    let v0 = Vector3::new(-1.0, 0.0, 0.5);
-    let v1 = Vector3::new(2.0, 0.3, -0.2);
-    let v2 = Vector3::new(0.2, 1.7, 0.1);
-    let tri = Triangle::new(v0, v1, v2).unwrap();
+mod common;
+use common::ModelBench;
 
-    let ray = Ray::new(Vector3::new(0.1, 0.2, 2.0), Vector3::new(0.0, 0.0, -1.0));
+fn bench_models(c: &mut Criterion) {
+    let models = [
+        (
+            "suzanne",
+            "tests/test-data/perfect-suzanne.stl",
+            (-1.5, 1.5),
+            (-1.0, 1.0),
+            5.0,
+            None,
+        ),
+        (
+            "bunny_res2",
+            "tests/test-data/bun_zipper_res2.stl",
+            (-0.1, 0.07),
+            (0.03, 0.19),
+            1.0,
+            Some(30),
+        ),
+        (
+            "bunny_res3",
+            "tests/test-data/bun_zipper_res3.stl",
+            (-0.1, 0.07),
+            (0.03, 0.19),
+            1.0,
+            Some(90),
+        ),
+        (
+            "bunny_res4",
+            "tests/test-data/bun_zipper_res4.stl",
+            (-0.1, 0.07),
+            (0.03, 0.19),
+            1.0,
+            Some(100),
+        ),
+        (
+            "thai_statue_50",
+            "tests/test-data/thai-statue-decim001.stl",
+            (-75.0, 75.0),
+            (-100.0, 100.0),
+            200.0,
+            Some(10),
+        ),
+        (
+            "thai_statue_80",
+            "tests/test-data/thai-statue-decim001.stl",
+            (-50.0, 50.0),
+            (-100.0, 100.0),
+            200.0,
+            Some(10),
+        ),
+    ];
 
-    let mut group = c.benchmark_group("intersect");
+    for (name, path, bounds_x, bounds_y, z_start, size) in models {
+        {
+            let bench = ModelBench::<f32>::new(name, path, bounds_x, bounds_y, z_start, size);
+            bench.report_hit_rate();
+            bench.run_init_bench(c, "f32");
+            bench.run_intersect_bench(c, "f32");
+        }
 
-    group.bench_function("baldwin_weber_precomputed", |b| {
-        b.iter(|| tri.intersect(black_box(ray), black_box(0.0), black_box(1e9)))
-    });
-
-    group.bench_function("moller_trumbore", |b| {
-        b.iter(|| {
-            intersect::intersect_moller_trumbore(
-                black_box(v0),
-                black_box(v1),
-                black_box(v2),
-                black_box(ray),
-                black_box(0.0),
-                black_box(1e9),
-            )
-        })
-    });
-
-    group.finish();
-
-    c.bench_function("baldwin_weber_init", |b| {
-        b.iter(|| Triangle::new(black_box(v0), black_box(v1), black_box(v2)))
-    });
-
-    let mut group = c.benchmark_group("init_and_intersect");
-
-    group.bench_function("baldwin_weber", |b| {
-        b.iter(|| {
-            let tri = Triangle::new(black_box(v0), black_box(v1), black_box(v2)).unwrap();
-            tri.intersect(black_box(ray), black_box(0.0), black_box(1e9))
-        })
-    });
-
-    group.bench_function("moller_trumbore", |b| {
-        b.iter(|| {
-            intersect::intersect_moller_trumbore(
-                black_box(v0),
-                black_box(v1),
-                black_box(v2),
-                black_box(ray),
-                black_box(0.0),
-                black_box(1e9),
-            )
-        })
-    });
-
-    group.finish();
+        {
+            let bench = ModelBench::<f64>::new(name, path, bounds_x, bounds_y, z_start, size);
+            bench.report_hit_rate();
+            bench.run_init_bench(c, "f64");
+            bench.run_intersect_bench(c, "f64");
+        }
+    }
 }
 
-criterion_group!(benches, bench_intersection);
+criterion_group!(benches, bench_models);
 criterion_main!(benches);
