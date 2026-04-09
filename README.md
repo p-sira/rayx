@@ -18,6 +18,10 @@ The precompute costs a little memory per triangle but reduces per-ray arithmetic
 
 ## Performance
 
+While Baldwin-Weber requires a one-time precomputation phase for a triangle, the cost is minimal and quickly amortized over many ray intersections. **Baldwin-Weber becomes faster than Moller-Trumbore at more than 5 rays per triangle** as shown in `benches/crossover.rs`.
+
+For larger scenes, **Baldwin-Weber consistently outperforms Moller-Trumbore in intersection time across various model complexities.** The performance gap is most pronounced at lower precisions (f32) where the reduced arithmetic complexity yields up to 45% speedup.
+
 On a benchmark at **f32** precision on a single core [1] (2,500 rays vs meshes):
 
 | Model | Triangles | Mem (BW/MT; KB) | Hit | BW Init | BW Intersect | MT Intersect | Speed Up |
@@ -39,8 +43,6 @@ On a benchmark at **f64** precision:
 | Bunny (High) | 16,214 | 1556/1168 | 53.1% | 36.5 µs | 264.4 ms | 288.5 ms | 9.1% |
 | Thai Statue | 100,000 | 9600/7200\* | 53.7% | 435 µs | 2.43 s | 2.43 s | 0% |
 | Thai Statue | 100,000 | 9600/7200\* | 78.6% | 500 µs | 1.92 s | 1.92 s | 0% |
-
-**Baldwin-Weber consistently outperforms Moller-Trumbore in intersection time across various model complexities.** While it requires a one-time precomputation phase, the cost is minimal and quickly amortized over many ray intersections. The performance gap is most pronounced at lower precisions (f32) where the reduced arithmetic complexity yields up to 45% speedup.
 
 \* Notice the Baldwin-Weber implementation spills into the RAM, while Moller-Trumbore implementation stays within the L3 cache. This is due to the larger memory footprint of the Baldwin-Weber implementation.
 

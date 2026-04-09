@@ -36,6 +36,10 @@ stl_io = "0.7"
 name = "intersection"
 harness = false
 
+[[bench]]
+name = "crossover"
+harness = false
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
