@@ -7,7 +7,7 @@ fn bench_models(c: &mut Criterion) {
     let models = [
         (
             "suzanne",
-            "tests/test-data/perfect-suzanne.stl",
+            "tests/test_data/perfect-suzanne.stl",
             (-1.5, 1.5),
             (-1.0, 1.0),
             5.0,
@@ -15,7 +15,7 @@ fn bench_models(c: &mut Criterion) {
         ),
         (
             "bunny_res2",
-            "tests/test-data/bun_zipper_res2.stl",
+            "tests/test_data/bun_zipper_res2.stl",
             (-0.1, 0.07),
             (0.03, 0.19),
             1.0,
@@ -23,7 +23,7 @@ fn bench_models(c: &mut Criterion) {
         ),
         (
             "bunny_res3",
-            "tests/test-data/bun_zipper_res3.stl",
+            "tests/test_data/bun_zipper_res3.stl",
             (-0.1, 0.07),
             (0.03, 0.19),
             1.0,
@@ -31,7 +31,7 @@ fn bench_models(c: &mut Criterion) {
         ),
         (
             "bunny_res4",
-            "tests/test-data/bun_zipper_res4.stl",
+            "tests/test_data/bun_zipper_res4.stl",
             (-0.1, 0.07),
             (0.03, 0.19),
             1.0,
@@ -39,7 +39,7 @@ fn bench_models(c: &mut Criterion) {
         ),
         (
             "thai_statue_50",
-            "tests/test-data/thai-statue-decim001.stl",
+            "tests/test_data/thai-statue-decim001.stl",
             (-75.0, 75.0),
             (-100.0, 100.0),
             200.0,
@@ -47,7 +47,7 @@ fn bench_models(c: &mut Criterion) {
         ),
         (
             "thai_statue_80",
-            "tests/test-data/thai-statue-decim001.stl",
+            "tests/test_data/thai-statue-decim001.stl",
             (-50.0, 50.0),
             (-100.0, 100.0),
             200.0,

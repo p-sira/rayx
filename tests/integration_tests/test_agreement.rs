@@ -1,50 +1,19 @@
 use nalgebra::Vector3;
 use rayx::{Ray, Triangle, intersect};
-use std::fs::File;
-use std::path::Path;
 
-fn approx(a: f32, b: f32, tol: f32) -> bool {
-    (a - b).abs() <= tol
-}
+use crate::common::{approx, indexed_mesh_to_triangle_vertices, try_load_mesh};
 
 fn run_stl_agreement_test(file_name: &str, rtol: f32) {
-    let test_data_dir = Path::new("tests/test-data");
-    let path = test_data_dir.join(file_name);
-    if !path.exists() {
-        println!(
-            "File {} not found, skipping. Please download STL files from the github repo: https://github.com/p-sira/rayx/tests/test-data",
-            file_name
-        );
-        return;
-    }
+    let mesh = match try_load_mesh(file_name) {
+        Some(mesh) => mesh,
+        None => return,
+    };
 
-    let mut file = File::open(&path).expect("Failed to open model");
-    let mesh = stl_io::read_stl(&mut file).expect("Failed to read model");
-
-    // Load triangles
-    let mut triangles = Vec::new();
-    for f in &mesh.faces {
-        let v = [
-            Vector3::new(
-                mesh.vertices[f.vertices[0]][0],
-                mesh.vertices[f.vertices[0]][1],
-                mesh.vertices[f.vertices[0]][2],
-            ),
-            Vector3::new(
-                mesh.vertices[f.vertices[1]][0],
-                mesh.vertices[f.vertices[1]][1],
-                mesh.vertices[f.vertices[1]][2],
-            ),
-            Vector3::new(
-                mesh.vertices[f.vertices[2]][0],
-                mesh.vertices[f.vertices[2]][1],
-                mesh.vertices[f.vertices[2]][2],
-            ),
-        ];
-        if let Ok(tri) = Triangle::<f32>::new(v[0], v[1], v[2]) {
-            triangles.push((v, tri));
-        }
-    }
+    let triangle_vertices = indexed_mesh_to_triangle_vertices(&mesh);
+    let triangles = triangle_vertices
+        .iter()
+        .map(|v| Triangle::new(v[0], v[1], v[2]).unwrap())
+        .collect::<Vec<_>>();
 
     // Generate some rays aimed at the origin where models are usually centered
     let rays = [
@@ -59,7 +28,7 @@ fn run_stl_agreement_test(file_name: &str, rtol: f32) {
     let t_max = 1000.0;
 
     for ray in rays {
-        for (v, tri) in &triangles {
+        for (v, tri) in triangle_vertices.iter().zip(triangles.iter()) {
             let res_bw = tri.intersect(ray, t_min, t_max);
             let res_mt = intersect::intersect_moller_trumbore(v[0], v[1], v[2], ray, t_min, t_max);
 
