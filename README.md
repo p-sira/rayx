@@ -16,6 +16,25 @@
 
 The precompute costs a little memory per triangle but reduces per-ray arithmetic.
 
+## Usage
+
+Install `rayx` with
+
+```bash
+cargo add rayx
+```
+
+Example:
+
+```rust
+use rayx::{Ray, Triangle};
+
+let tri = Triangle::<f64>::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]).unwrap();
+
+let ray = Ray::new([0.25, 0.25, 1.0], [0.0, 0.0, -1.0]);
+let hit = tri.intersect(ray, 0.0, 10.0).unwrap();
+```
+
 ## Performance
 
 While Baldwin-Weber requires a one-time precomputation phase for a triangle, the cost is minimal and quickly amortized over many ray intersections. **Baldwin-Weber becomes faster than Moller-Trumbore at more than 5 rays per triangle** as shown in `benches/crossover.rs`.
@@ -48,21 +67,4 @@ On a benchmark at **f64** precision:
 
 [1]: AMD Ryzen 5 4600H with Radeon Graphics @3.0 GHz running x86_64-unknown-linux-gnu with rustc 1.90.0, L2 cache 3 MiB, L3 cache 8 MiB, RAM 16 GB, SSD SATA 600 (6 Gbps).
 
-## Usage
-
-Install `rayx` with
-
-```bash
-cargo add rayx
-```
-
-Example:
-
-```rust
-use rayx::{Ray, Triangle};
-
-let tri = Triangle::<f64>::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]).unwrap();
-
-let ray = Ray::new([0.25, 0.25, 1.0], [0.0, 0.0, -1.0]);
-let hit = tri.intersect(ray, 0.0, 10.0).unwrap();
-```
+More information on the models [here](tests/test_data/models.md)
