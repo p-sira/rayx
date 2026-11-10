@@ -61,10 +61,12 @@ Local release benchmarks on an AMD Ryzen 5 4600H (rustc 1.99.1), pinned to one c
 
 The Bunny High `f32` downward workload has one differing hit (BW 33, MT 32), which affects its comparison. Other workloads have matching hit counts. Timings are local wall-clock results, not CodSpeed simulation estimates.
 
-For batched rays, `intersect::intersect_baldwin_weber_chunked` can preprocess and reuse smaller triangle chunks. The table above measures the original ray-major traversal.
+The table above measures the original ray-major traversal. For 64 downward rays on Thai Statue, `intersect::intersect_baldwin_weber_chunked` with 512-triangle chunks was **1.57× / 1.55× faster** (`f32` / `f64`) with wide bounds and **1.35× / 1.78× faster** with narrow bounds. These are medians of three separate local release runs; single-ray misses were slower with chunking.
 
 To reproduce one run (repeat five times and take the median):
 
 ```bash
 taskset -c 2 cargo run --release --locked --example local_intersection
 ```
+
+For the chunked comparison, run `taskset -c 2 cargo run --release --locked --example local_chunked`.
