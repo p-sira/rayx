@@ -61,6 +61,8 @@ Local release benchmarks on an AMD Ryzen 5 4600H (rustc 1.99.1), pinned to one c
 
 The Bunny High `f32` downward workload has one differing hit (BW 33, MT 32), which affects its comparison. Other workloads have matching hit counts. Timings are local wall-clock results, not CodSpeed simulation estimates.
 
+For batched rays, `intersect::intersect_baldwin_weber_chunked` can preprocess and reuse smaller triangle chunks. The table above measures the original ray-major traversal.
+
 To reproduce one run (repeat five times and take the median):
 
 ```bash

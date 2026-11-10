@@ -280,6 +280,33 @@ impl<T: Float + RealField + Copy> ModelBench<T> {
         group.finish();
     }
 
+    pub fn run_chunked_bench(&self, c: &mut Criterion, precision_label: &str) {
+        // Four targeted simulation cases keep the CodSpeed suite practical.
+        // Scratch is reused, but preprocessing each chunk is timed.
+        let mut scratch = vec![None; 512];
+        for (workload, rays) in [("axis_64", &self.rays), ("miss_16", &self.miss_rays)] {
+            let mut results = vec![None; rays.len()];
+            let mut group =
+                c.benchmark_group(format!("{}/{}/{}", self.name, precision_label, workload));
+            group.sample_size(10);
+            group.bench_function("baldwin_weber_chunked_512", |b| {
+                b.iter(|| {
+                    intersect::intersect_baldwin_weber_chunked(
+                        black_box(&self.triangles_vertices),
+                        black_box(rays),
+                        &mut scratch,
+                        &mut results,
+                        T::zero(),
+                        cast(1000.0).unwrap(),
+                    )
+                    .unwrap();
+                    black_box(&results);
+                })
+            });
+            group.finish();
+        }
+    }
+
     /// Shared kernels for the CodSpeed and local wall-clock harnesses.
     pub fn count_baldwin_weber(&self, rays: &[Ray<T>]) -> usize {
         let mut hits = 0;
