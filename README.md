@@ -1,46 +1,36 @@
 # RayX
 
-`rayx` is a small Rust ray intersection library using **Baldwin-Weber's Fast Ray-Triangle Intersections by Coordinate Transformation** ([JCGT 2016](https://jcgt.org/published/0005/03/03/)).
+[![Crate](https://img.shields.io/crates/v/rayx)](https://crates.io/crates/rayx)
+[![Documentation](https://img.shields.io/badge/Docs-docs.rs-blue)](https://docs.rs/rayx)
+[![License](https://img.shields.io/badge/License-BSD--3--Clause-brightgreen.svg)](LICENSE)
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/p-sira/rayx)
 
-<p>
-    <a href="https://opensource.org/license/BSD-3-clause" style="text-decoration:none">
-        <img src="https://img.shields.io/badge/License-BSD--3--Clause-brightgreen.svg" alt="License">
-    </a>
-    <a href="https://crates.io/crates/rayx" style="text-decoration:none">
-        <img src="https://img.shields.io/crates/v/rayx" alt="Crate">
-    </a>
-    <a href="https://docs.rs/rayx" style="text-decoration:none">
-        <img src="https://img.shields.io/badge/Docs-docs.rs-blue" alt="Documentation">
-    </a>
-    <a href="https://app.codspeed.io/p-sira/rayx?utm_source=badge" style="text-decoration:none">
-        <img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json" alt="CodSpeed"/>
-    </a>
-</p>
-
-The precompute costs a little memory per triangle but reduces per-ray arithmetic.
+`rayx` is a small Rust ray intersection library using **Baldwin-Weber's Fast Ray-Triangle Intersections by Coordinate Transformation** ([JCGT 2016](https://jcgt.org/published/0005/03/03/)). Precomputed triangle transforms reduce per-ray arithmetic at the cost of additional memory.
 
 ## Usage
-
-Install `rayx` with
 
 ```bash
 cargo add rayx
 ```
 
-Example:
-
 ```rust
 use rayx::{Ray, Triangle};
 
-let tri = Triangle::<f64>::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]).unwrap();
+let tri = Triangle::<f64>::new(
+    [0.0, 0.0, 0.0],
+    [1.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0],
+)
+.unwrap();
 
 let ray = Ray::new([0.25, 0.25, 1.0], [0.0, 0.0, -1.0]);
 let hit = tri.intersect(ray, 0.0, 10.0).unwrap();
+assert_eq!(hit.t, 1.0);
 ```
 
 ## Performance
 
-Local release benchmarks on an AMD Ryzen 5 4600H (rustc 1.99.1), pinned to one core. Each mesh uses **64 downward**, **16 oblique**, and **16 miss** rays; both algorithms scan triangles until the first hit. Values are medians of five runs.
+Release benchmarks on an AMD Ryzen 5 4600H (rustc 1.99.1), pinned to one core. Each mesh uses 64 downward, 16 oblique, and 16 miss rays, scanning triangles until the first hit. Results are medians of five local wall-clock runs.
 
 | Model (triangles) | Type | BW init (µs) | Downward BW / MT / Chunked (ms) | Downward | Oblique | Miss |
 |---|---|---:|---:|---:|---:|---:|
@@ -57,16 +47,15 @@ Local release benchmarks on an AMD Ryzen 5 4600H (rustc 1.99.1), pinned to one c
 | Thai Statue narrow (100,000) | f32 | 2255.3 | 65.705 / 61.806 / 43.628 | -5.9% | -6.8% | -10.1% |
 | Thai Statue narrow (100,000) | f64 | 2496.4 | 77.373 / 70.611 / 43.149 | -8.7% | -8.1% | -9.5% |
 
-**BW advantage** = `(MT / BW − 1) × 100%`; positive values favor the original Baldwin–Weber method over Möller–Trumbore. The reported BW initialization is separate, while chunked timings include preprocessing each chunk (but exclude scratch-buffer allocation). The wide/narrow statue cases use different ray bounds on the same mesh.
+BW = Baldwin–Weber; MT = Möller–Trumbore. The final three columns show BW advantage: `(MT / BW − 1) × 100%`; positive values favor BW. BW initialization is measured separately. Chunked timings include preprocessing but exclude scratch-buffer allocation.
 
-The Bunny High `f32` downward workload has one differing hit (BW 33, MT 32), which affects its comparison. Other workloads have matching hit counts. Timings are local wall-clock results, not CodSpeed simulation estimates.
+The Bunny High `f32` downward case has differing hit counts (BW: 33; MT: 32), affecting the comparison. All other workloads have matching hit counts. Statue wide/narrow cases use different ray bounds on the same mesh.
 
-More triangles can correlate with less performance for BW cases as the larger precomputed transforms put pressure on the L3 cache. The 100,000-triangle Statue needs about 4.6 MiB (`f32`) or 9.2 MiB (`f64`) for BW transforms, exceeding this machine's 4 MiB L3 cache per CPU group. Rather than precomputing the whole scene, we **chunk it so that it fits in L3** and reuse each chunk across rays. The measured 512-triangle chunks fit in L2 as well; cache misses were not measured directly. Chunked values are medians of five additional local release runs, and individual rays may be slower with chunking.
+Larger transform sets can increase cache pressure. The statue requires about 4.6 MiB (`f32`) or 9.2 MiB (`f64`), exceeding this CPU's 4 MiB L3 cache per group. Processing batches of rays in 512-triangle chunks improved these statue timings; individual rays may be slower. Chunks fit in L2, though cache misses were not measured directly.
 
-To reproduce one run (repeat five times and take the median):
+To reproduce, run each command five times and take the median:
 
 ```bash
 taskset -c 2 cargo run --release --locked --example local_intersection
+taskset -c 2 cargo run --release --locked --example local_chunked
 ```
-
-For the chunked comparison, run `taskset -c 2 cargo run --release --locked --example local_chunked`.
