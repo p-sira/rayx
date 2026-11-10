@@ -8,7 +8,7 @@
 //!
 //! Baldwin-Weber consistently outperforms Moller-Trumbore in intersection time by 10-45%,
 //! depending on the scene, especially at f32 precision. The crossover point for the initialization overhead
-//! is at about 5 rays per triangle. Learn more in the [README.md](https://github.com/p-sira/rayx?tab=readme-ov-file#performance).
+//! depends on the ray distribution and hardware. Learn more in the [README.md](https://github.com/p-sira/rayx?tab=readme-ov-file#performance).
 //!
 //! ## Usage
 //!

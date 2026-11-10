@@ -9,6 +9,8 @@ pub struct ModelBench<T: Float + RealField + Copy> {
     pub triangles_vertices: Vec<[Vector3<T>; 3]>,
     pub triangles_precomputed: Vec<Triangle<T>>,
     pub rays: Vec<Ray<T>>,
+    pub oblique_rays: Vec<Ray<T>>,
+    pub miss_rays: Vec<Ray<T>>,
     pub size: Option<usize>,
 }
 
@@ -93,96 +95,158 @@ impl<T: Float + RealField + Copy> ModelBench<T> {
             }
         }
 
+        // Keep the original 50x50 downward workload for historical comparisons.
+        // Add smaller, deterministic workloads to cover oblique rays and misses
+        // without multiplying the cost of the largest meshes.
+        let mut oblique_rays = Vec::new();
+        let mut miss_rays = Vec::new();
+        let n = 16;
+        let mesh_max_x = mesh
+            .vertices
+            .iter()
+            .map(|v| v[0])
+            .fold(f32::NEG_INFINITY, f32::max);
+        let mesh_min_x = mesh
+            .vertices
+            .iter()
+            .map(|v| v[0])
+            .fold(f32::INFINITY, f32::min);
+        let outside_x: T = cast(mesh_max_x + (mesh_max_x - mesh_min_x).max(1.0)).unwrap();
+        let slope_x: T = cast(0.15 * (bounds_x.1 - bounds_x.0) / z_start).unwrap();
+        let slope_y: T = cast(0.15 * (bounds_y.1 - bounds_y.0) / z_start).unwrap();
+
+        for i in 0..n {
+            for j in 0..n {
+                let u: T = cast::<usize, T>(i).unwrap() / cast::<usize, T>(n).unwrap();
+                let v: T = cast::<usize, T>(j).unwrap() / cast::<usize, T>(n).unwrap();
+                let x = u * (bx_1 - bx_0) + bx_0;
+                let y = v * (by_1 - by_0) + by_0;
+                let dx = if i % 2 == 0 { -slope_x } else { slope_x };
+                let dy = if j % 2 == 0 { -slope_y } else { slope_y };
+                oblique_rays.push(Ray::new(
+                    Vector3::new(x, y, zs),
+                    Vector3::new(dx, dy, neg_one),
+                ));
+                // The origin lies beyond the mesh's actual x extent, so these
+                // downward rays traverse every triangle without hitting one.
+                miss_rays.push(Ray::new(
+                    Vector3::new(outside_x + u * (bx_1 - bx_0), y, zs),
+                    Vector3::new(T::zero(), T::zero(), neg_one),
+                ));
+            }
+        }
+
         Self {
             name: name.to_string(),
             triangles_vertices,
             triangles_precomputed,
             rays,
+            oblique_rays,
+            miss_rays,
             size,
         }
     }
 
     pub fn report_hit_rate(&self) {
-        let mut hits = 0;
         let t_min: T = cast(0.0).unwrap();
         let t_max: T = cast(1000.0).unwrap();
-        for ray in &self.rays {
-            for tri in &self.triangles_precomputed {
-                if tri.intersect(*ray, t_min, t_max).is_some() {
-                    hits += 1;
-                    break;
+        for (workload, rays) in [
+            ("axis", &self.rays),
+            ("oblique", &self.oblique_rays),
+            ("miss", &self.miss_rays),
+        ] {
+            let mut hits = 0;
+            for ray in rays {
+                for tri in &self.triangles_precomputed {
+                    if tri.intersect(*ray, t_min, t_max).is_some() {
+                        hits += 1;
+                        break;
+                    }
                 }
             }
+            let hit_rate = hits as f32 / rays.len() as f32;
+            eprintln!(
+                "{} {workload} hit rate ({}): {:.2}% ({}/{})",
+                self.name,
+                if std::mem::size_of::<T>() == 4 {
+                    "f32"
+                } else {
+                    "f64"
+                },
+                hit_rate * 100.0,
+                hits,
+                rays.len()
+            );
         }
-        let hit_rate = hits as f32 / self.rays.len() as f32;
-        eprintln!(
-            "{} hit rate ({}): {:.2}% ({}/{})",
-            self.name,
-            if std::mem::size_of::<T>() == 4 {
-                "f32"
-            } else {
-                "f64"
-            },
-            hit_rate * 100.0,
-            hits,
-            self.rays.len()
-        );
     }
 
     pub fn run_intersect_bench(&self, c: &mut Criterion, precision_label: &str) {
-        let mut group = c.benchmark_group(format!("{}/{}", self.name, precision_label));
-        if let Some(size) = self.size {
-            group.sample_size(size);
-        }
-
         let t_min: T = cast(0.0).unwrap();
         let t_max: T = cast(1000.0).unwrap();
 
-        group.bench_function("baldwin_weber", |b| {
-            b.iter(|| {
-                let mut hits = 0;
-                for ray in black_box(&self.rays) {
-                    for tri in black_box(&self.triangles_precomputed) {
-                        if tri.intersect(*ray, t_min, t_max).is_some() {
-                            hits += 1;
-                            break;
+        for (workload, rays) in [
+            ("axis", &self.rays),
+            ("oblique", &self.oblique_rays),
+            ("miss", &self.miss_rays),
+        ] {
+            let group_name = if workload == "axis" {
+                format!("{}/{}", self.name, precision_label)
+            } else {
+                format!("{}/{}/{}", self.name, precision_label, workload)
+            };
+            let mut group = c.benchmark_group(group_name);
+            if let Some(size) = self.size {
+                group.sample_size(size);
+            }
+
+            group.bench_function("baldwin_weber", |b| {
+                b.iter(|| {
+                    let mut hits = 0;
+                    for ray in black_box(rays) {
+                        for tri in black_box(&self.triangles_precomputed) {
+                            if tri.intersect(*ray, t_min, t_max).is_some() {
+                                hits += 1;
+                                break;
+                            }
                         }
                     }
-                }
-                hits
-            })
-        });
+                    hits
+                })
+            });
 
-        group.bench_function("moller_trumbore", |b| {
-            b.iter(|| {
-                let mut hits = 0;
-                for ray in black_box(&self.rays) {
-                    for v in black_box(&self.triangles_vertices) {
-                        if intersect::intersect_moller_trumbore(
-                            v[0], v[1], v[2], *ray, t_min, t_max,
-                        )
-                        .is_some()
-                        {
-                            hits += 1;
-                            break;
+            group.bench_function("moller_trumbore", |b| {
+                b.iter(|| {
+                    let mut hits = 0;
+                    for ray in black_box(rays) {
+                        for v in black_box(&self.triangles_vertices) {
+                            if intersect::intersect_moller_trumbore(
+                                v[0], v[1], v[2], *ray, t_min, t_max,
+                            )
+                            .is_some()
+                            {
+                                hits += 1;
+                                break;
+                            }
                         }
                     }
-                }
-                hits
-            })
-        });
+                    hits
+                })
+            });
 
-        group.finish();
+            group.finish();
+        }
     }
 
     pub fn run_init_bench(&self, c: &mut Criterion, precision_label: &str) {
         let mut group = c.benchmark_group(format!("{}/{}", self.name, precision_label));
         group.sample_size(10);
 
-        group.bench_function("baldwin_weber_init", |b| {
+        // This ID differs from the old benchmark, which discarded the result
+        // and could have optimized the construction away.
+        group.bench_function("baldwin_weber_init_observed", |b| {
             b.iter(|| {
                 for v in black_box(&self.triangles_vertices) {
-                    let _ = Triangle::new(v[0], v[1], v[2]).unwrap();
+                    black_box(Triangle::new(v[0], v[1], v[2]).unwrap());
                 }
             })
         });
