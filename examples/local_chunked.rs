@@ -1,5 +1,5 @@
 //! Compare ray-major traversal with the cache-friendly chunked batch API.
-//! Run with `taskset -c 2 cargo run --release --example local_chunked`.
+//! Run with `taskset -c 2 cargo run --release --locked --example local_chunked`.
 
 use std::{hint::black_box, time::Instant};
 
@@ -65,9 +65,6 @@ fn measure<T: Float + RealField + Copy>(precision: &str, bench: &ModelBench<T>) 
 fn main() {
     println!("model,precision,workload,ray_major_ms,chunked_512_ms");
     for (name, path, bx, by, z, size) in MODELS {
-        if !matches!(name, "bunny_res2" | "thai_statue_50" | "thai_statue_80") {
-            continue;
-        }
         measure("f32", &ModelBench::<f32>::new(name, path, bx, by, z, size));
         measure("f64", &ModelBench::<f64>::new(name, path, bx, by, z, size));
     }

@@ -42,26 +42,26 @@ let hit = tri.intersect(ray, 0.0, 10.0).unwrap();
 
 Local release benchmarks on an AMD Ryzen 5 4600H (rustc 1.99.1), pinned to one core. Each mesh uses **64 downward**, **16 oblique**, and **16 miss** rays; both algorithms scan triangles until the first hit. Values are medians of five runs.
 
-| Model (triangles) | Type | BW init (µs) | Downward BW / MT (ms) | Downward | Oblique | Miss |
+| Model (triangles) | Type | BW init (µs) | Downward BW / MT / Chunked (ms) | Downward | Oblique | Miss |
 |---|---|---:|---:|---:|---:|---:|
-| Suzanne (698) | f32 | 10.0 | 0.291 / 0.303 | +4.1% | +61.6% | +32.5% |
-| Suzanne (698) | f64 | 10.6 | 0.284 / 0.334 | +17.5% | +71.9% | +39.5% |
-| Bunny Low (908) | f32 | 16.5 | 0.445 / 0.486 | +9.2% | +55.8% | +29.2% |
-| Bunny Low (908) | f64 | 17.5 | 0.446 / 0.536 | +20.2% | +81.0% | +32.7% |
-| Bunny Medium (3,851) | f32 | 67.3 | 1.991 / 2.103 | +5.6% | +21.8% | +43.5% |
-| Bunny Medium (3,851) | f64 | 75.1 | 2.122 / 2.223 | +4.8% | +4.0% | +87.3% |
-| Bunny High (16,214) | f32 | 290.7 | 6.899 / 7.812 | +13.2% | +9.3% | +6.1% |
-| Bunny High (16,214) | f64 | 339.7 | 7.404 / 7.602 | +2.7% | +2.9% | +21.2% |
-| Thai Statue wide (100,000) | f32 | 2195.1 | 76.877 / 72.048 | -6.3% | -6.2% | -8.0% |
-| Thai Statue wide (100,000) | f64 | 2706.0 | 87.658 / 83.513 | -4.7% | -13.9% | -11.2% |
-| Thai Statue narrow (100,000) | f32 | 2255.3 | 65.705 / 61.806 | -5.9% | -6.8% | -10.1% |
-| Thai Statue narrow (100,000) | f64 | 2496.4 | 77.373 / 70.611 | -8.7% | -8.1% | -9.5% |
+| Suzanne (698) | f32 | 10.0 | 0.291 / 0.303 / 0.367 | +4.1% | +61.6% | +32.5% |
+| Suzanne (698) | f64 | 10.6 | 0.284 / 0.334 / 0.354 | +17.5% | +71.9% | +39.5% |
+| Bunny Low (908) | f32 | 16.5 | 0.445 / 0.486 / 0.462 | +9.2% | +55.8% | +29.2% |
+| Bunny Low (908) | f64 | 17.5 | 0.446 / 0.536 / 0.457 | +20.2% | +81.0% | +32.7% |
+| Bunny Medium (3,851) | f32 | 67.3 | 1.991 / 2.103 / 1.967 | +5.6% | +21.8% | +43.5% |
+| Bunny Medium (3,851) | f64 | 75.1 | 2.122 / 2.223 / 1.965 | +4.8% | +4.0% | +87.3% |
+| Bunny High (16,214) | f32 | 290.7 | 6.899 / 7.812 / 7.612 | +13.2% | +9.3% | +6.1% |
+| Bunny High (16,214) | f64 | 339.7 | 7.404 / 7.602 / 7.771 | +2.7% | +2.9% | +21.2% |
+| Thai Statue wide (100,000) | f32 | 2195.1 | 76.877 / 72.048 / 52.806 | -6.3% | -6.2% | -8.0% |
+| Thai Statue wide (100,000) | f64 | 2706.0 | 87.658 / 83.513 / 53.829 | -4.7% | -13.9% | -11.2% |
+| Thai Statue narrow (100,000) | f32 | 2255.3 | 65.705 / 61.806 / 43.628 | -5.9% | -6.8% | -10.1% |
+| Thai Statue narrow (100,000) | f64 | 2496.4 | 77.373 / 70.611 / 43.149 | -8.7% | -8.1% | -9.5% |
 
-**BW advantage** = `(MT / BW − 1) × 100%`; positive values favor Baldwin–Weber. Initialization time is separate from intersection time. The wide/narrow statue cases use different ray bounds on the same mesh.
+**BW advantage** = `(MT / BW − 1) × 100%`; positive values favor the original Baldwin–Weber method over Möller–Trumbore. The reported BW initialization is separate, while chunked timings include preprocessing each chunk (but exclude scratch-buffer allocation). The wide/narrow statue cases use different ray bounds on the same mesh.
 
 The Bunny High `f32` downward workload has one differing hit (BW 33, MT 32), which affects its comparison. Other workloads have matching hit counts. Timings are local wall-clock results, not CodSpeed simulation estimates.
 
-The table above measures the original ray-major traversal. For 64 downward rays on Thai Statue, `intersect::intersect_baldwin_weber_chunked` with 512-triangle chunks was **1.57× / 1.55× faster** (`f32` / `f64`) with wide bounds and **1.35× / 1.78× faster** with narrow bounds. These are medians of three separate local release runs; single-ray misses were slower with chunking.
+More triangles can correlate with less performance for BW cases as the larger precomputed transforms put pressure on the L3 cache. The 100,000-triangle Statue needs about 4.6 MiB (`f32`) or 9.2 MiB (`f64`) for BW transforms, exceeding this machine's 4 MiB L3 cache per CPU group. Rather than precomputing the whole scene, we **chunk it so that it fits in L3** and reuse each chunk across rays. The measured 512-triangle chunks fit in L2 as well; cache misses were not measured directly. Chunked values are medians of five additional local release runs, and individual rays may be slower with chunking.
 
 To reproduce one run (repeat five times and take the median):
 
