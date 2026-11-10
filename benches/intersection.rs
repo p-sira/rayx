@@ -10,6 +10,9 @@ fn bench_models(c: &mut Criterion) {
             bench.report_hit_rate();
             bench.run_init_bench(c, "f32");
             bench.run_intersect_bench(c, "f32");
+            if name == "thai_statue_50" {
+                bench.run_chunked_bench(c, "f32");
+            }
         }
 
         {
@@ -17,6 +20,9 @@ fn bench_models(c: &mut Criterion) {
             bench.report_hit_rate();
             bench.run_init_bench(c, "f64");
             bench.run_intersect_bench(c, "f64");
+            if name == "thai_statue_50" {
+                bench.run_chunked_bench(c, "f64");
+            }
         }
     }
 }

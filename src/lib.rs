@@ -9,6 +9,8 @@
 //! Intersection performance depends on the mesh size, floating-point precision, and ray
 //! distribution. Baldwin-Weber's precomputation is amortized across ray intersections,
 //! but its larger triangle representation can increase cache pressure on large meshes.
+//! For batches of rays, [`intersect::intersect_baldwin_weber_chunked`] can reuse
+//! transforms in cache without storing an entire precomputed mesh.
 //! See the [local benchmarks](https://github.com/p-sira/rayx?tab=readme-ov-file#performance).
 //!
 //! ## Usage
