@@ -40,34 +40,29 @@ let hit = tri.intersect(ray, 0.0, 10.0).unwrap();
 
 ## Performance
 
-While Baldwin-Weber requires a one-time precomputation phase for a triangle, its cost can be amortized over many ray intersections. The crossover point depends on the ray distribution and hardware; `benches/crossover.rs` measures it with distinct rays.
+Local release benchmarks on an AMD Ryzen 5 4600H (rustc 1.99.1), pinned to one core. Each mesh uses **64 downward**, **16 oblique**, and **16 miss** rays; both algorithms scan triangles until the first hit. Values are medians of five runs.
 
-For larger scenes, **Baldwin-Weber consistently outperforms Moller-Trumbore in intersection time across various model complexities.** The performance gap is most pronounced at lower precisions (f32) where the reduced arithmetic complexity yields up to 45% speedup. The historical results below use 2,500 downward rays per model. The current CodSpeed-friendly benchmark uses 64 downward rays, 16 oblique rays, and 16 guaranteed misses per model, with identical ray sets for both algorithms. Because the workload sizes changed, the new results have separate benchmark IDs.
+| Model (triangles) | Type | BW init (µs) | Downward BW / MT (ms) | Downward | Oblique | Miss |
+|---|---|---:|---:|---:|---:|---:|
+| Suzanne (698) | f32 | 10.0 | 0.291 / 0.303 | +4.1% | +61.6% | +32.5% |
+| Suzanne (698) | f64 | 10.6 | 0.284 / 0.334 | +17.5% | +71.9% | +39.5% |
+| Bunny Low (908) | f32 | 16.5 | 0.445 / 0.486 | +9.2% | +55.8% | +29.2% |
+| Bunny Low (908) | f64 | 17.5 | 0.446 / 0.536 | +20.2% | +81.0% | +32.7% |
+| Bunny Medium (3,851) | f32 | 67.3 | 1.991 / 2.103 | +5.6% | +21.8% | +43.5% |
+| Bunny Medium (3,851) | f64 | 75.1 | 2.122 / 2.223 | +4.8% | +4.0% | +87.3% |
+| Bunny High (16,214) | f32 | 290.7 | 6.899 / 7.812 | +13.2% | +9.3% | +6.1% |
+| Bunny High (16,214) | f64 | 339.7 | 7.404 / 7.602 | +2.7% | +2.9% | +21.2% |
+| Thai Statue wide (100,000) | f32 | 2195.1 | 76.877 / 72.048 | -6.3% | -6.2% | -8.0% |
+| Thai Statue wide (100,000) | f64 | 2706.0 | 87.658 / 83.513 | -4.7% | -13.9% | -11.2% |
+| Thai Statue narrow (100,000) | f32 | 2255.3 | 65.705 / 61.806 | -5.9% | -6.8% | -10.1% |
+| Thai Statue narrow (100,000) | f64 | 2496.4 | 77.373 / 70.611 | -8.7% | -8.1% | -9.5% |
 
-On a benchmark at **f32** precision on a single core [1] (2,500 rays vs meshes):
+**BW advantage** = `(MT / BW − 1) × 100%`; positive values favor Baldwin–Weber. Initialization time is separate from intersection time. The wide/narrow statue cases use different ray bounds on the same mesh.
 
-| Model | Triangles | Mem (BW/MT; KB) | Hit | BW Init | BW Intersect | MT Intersect | Speed Up |
-|-------|-----------|-----|-----|---------|--------------|--------------|----------|
-| Suzanne | 698 | 33.5/25.1 | 43.5% | 1.7 µs | 7.0 ms | 10.2 ms | 45.7% |
-| Bunny (Low) | 908 | 43.6/32.7 | 51.0% | 2.3 µs | 9.4 ms | 13.3 ms | 41.5% |
-| Bunny (Med) | 3,851 | 185/139 | 52.5% | 9.6 µs | 48.4 ms | 54.5 ms | 12.6% |
-| Bunny (High) | 16,214 | 778/584 | 53.1% | 39.9 µs | 240.6 ms | 299.0 ms | 24.3% |
-| Thai Statue | 100,000 | 4800/3600 | 53.7% | 260 µs | 2.22 s | 2.50 s | 12.6% |
-| Thai Statue | 100,000 | 4800/3600 | 78.6% | 286 µs | 1.77 s | 1.97 s | 11.3% |
+The Bunny High `f32` downward workload has one differing hit (BW 33, MT 32), which affects its comparison. Other workloads have matching hit counts. Timings are local wall-clock results, not CodSpeed simulation estimates.
 
-On a benchmark at **f64** precision:
+To reproduce one run (repeat five times and take the median):
 
-| Model | Triangles | Mem (BW/MT; KB) | Hit | BW Init | BW Intersect | MT Intersect | Speed Up |
-|-------|-----------|-----|-----|---------|--------------|--------------|----------|
-| Suzanne | 698 | 67.0/50.2 | 43.5% | 1.5 µs | 8.2 ms | 9.7 ms | 18.3% |
-| Bunny (Low) | 908 | 87.2/65.4 | 51.0% | 2.0 µs | 10.8 ms | 11.7 ms | 8.3% |
-| Bunny (Med) | 3,851 | 370/278 | 52.5% | 8.8 µs | 54.0 ms | 61.1 ms | 13.1% |
-| Bunny (High) | 16,214 | 1556/1168 | 53.1% | 36.5 µs | 264.4 ms | 288.5 ms | 9.1% |
-| Thai Statue | 100,000 | 9600/7200\* | 53.7% | 435 µs | 2.43 s | 2.43 s | 0% |
-| Thai Statue | 100,000 | 9600/7200\* | 78.6% | 500 µs | 1.92 s | 1.92 s | 0% |
-
-\* Notice the Baldwin-Weber implementation spills into the RAM, while Moller-Trumbore implementation stays within the L3 cache. This is due to the larger memory footprint of the Baldwin-Weber implementation.
-
-[1]: AMD Ryzen 5 4600H with Radeon Graphics @3.0 GHz running x86_64-unknown-linux-gnu with rustc 1.90.0, L2 cache 3 MiB, L3 cache 8 MiB, RAM 16 GB, SSD SATA 600 (6 Gbps).
-
-More information on the models [here](tests/test_data/models.md)
+```bash
+taskset -c 2 cargo run --release --locked --example local_intersection
+```

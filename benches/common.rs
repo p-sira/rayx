@@ -4,6 +4,66 @@ use num_traits::{Float, cast};
 use rayx::{Ray, Triangle, intersect};
 use std::fs::File;
 
+pub type ModelSpec = (
+    &'static str,
+    &'static str,
+    (f32, f32),
+    (f32, f32),
+    f32,
+    Option<usize>,
+);
+
+pub const MODELS: [ModelSpec; 6] = [
+    (
+        "suzanne",
+        "tests/test_data/perfect-suzanne.stl",
+        (-1.5, 1.5),
+        (-1.0, 1.0),
+        5.0,
+        None,
+    ),
+    (
+        "bunny_res2",
+        "tests/test_data/bun_zipper_res2.stl",
+        (-0.1, 0.07),
+        (0.03, 0.19),
+        1.0,
+        Some(30),
+    ),
+    (
+        "bunny_res3",
+        "tests/test_data/bun_zipper_res3.stl",
+        (-0.1, 0.07),
+        (0.03, 0.19),
+        1.0,
+        Some(90),
+    ),
+    (
+        "bunny_res4",
+        "tests/test_data/bun_zipper_res4.stl",
+        (-0.1, 0.07),
+        (0.03, 0.19),
+        1.0,
+        Some(100),
+    ),
+    (
+        "thai_statue_50",
+        "tests/test_data/thai-statue-decim001.stl",
+        (-75.0, 75.0),
+        (-100.0, 100.0),
+        200.0,
+        Some(10),
+    ),
+    (
+        "thai_statue_80",
+        "tests/test_data/thai-statue-decim001.stl",
+        (-50.0, 50.0),
+        (-100.0, 100.0),
+        200.0,
+        Some(10),
+    ),
+];
+
 pub struct ModelBench<T: Float + RealField + Copy> {
     pub name: String,
     pub triangles_vertices: Vec<[Vector3<T>; 3]>,
@@ -182,9 +242,6 @@ impl<T: Float + RealField + Copy> ModelBench<T> {
     }
 
     pub fn run_intersect_bench(&self, c: &mut Criterion, precision_label: &str) {
-        let t_min: T = cast(0.0).unwrap();
-        let t_max: T = cast(1000.0).unwrap();
-
         for (workload, rays) in [
             ("axis_64", &self.rays),
             ("oblique_16", &self.oblique_rays),
@@ -199,37 +256,11 @@ impl<T: Float + RealField + Copy> ModelBench<T> {
             }
 
             group.bench_function("baldwin_weber", |b| {
-                b.iter(|| {
-                    let mut hits = 0;
-                    for ray in black_box(rays) {
-                        for tri in black_box(&self.triangles_precomputed) {
-                            if tri.intersect(*ray, t_min, t_max).is_some() {
-                                hits += 1;
-                                break;
-                            }
-                        }
-                    }
-                    hits
-                })
+                b.iter(|| self.count_baldwin_weber(rays))
             });
 
             group.bench_function("moller_trumbore", |b| {
-                b.iter(|| {
-                    let mut hits = 0;
-                    for ray in black_box(rays) {
-                        for v in black_box(&self.triangles_vertices) {
-                            if intersect::intersect_moller_trumbore(
-                                v[0], v[1], v[2], *ray, t_min, t_max,
-                            )
-                            .is_some()
-                            {
-                                hits += 1;
-                                break;
-                            }
-                        }
-                    }
-                    hits
-                })
+                b.iter(|| self.count_moller_trumbore(rays))
             });
 
             group.finish();
@@ -243,13 +274,51 @@ impl<T: Float + RealField + Copy> ModelBench<T> {
         // This ID differs from the old benchmark, which discarded the result
         // and could have optimized the construction away.
         group.bench_function("baldwin_weber_init_observed", |b| {
-            b.iter(|| {
-                for v in black_box(&self.triangles_vertices) {
-                    black_box(Triangle::new(v[0], v[1], v[2]).unwrap());
-                }
-            })
+            b.iter(|| self.initialize_observed())
         });
 
         group.finish();
+    }
+
+    /// Shared kernels for the CodSpeed and local wall-clock harnesses.
+    pub fn count_baldwin_weber(&self, rays: &[Ray<T>]) -> usize {
+        let mut hits = 0;
+        let t_min: T = cast(0.0).unwrap();
+        let t_max: T = cast(1000.0).unwrap();
+        for ray in black_box(rays) {
+            for tri in black_box(&self.triangles_precomputed) {
+                if tri.intersect(*ray, t_min, t_max).is_some() {
+                    hits += 1;
+                    break;
+                }
+            }
+        }
+        hits
+    }
+
+    pub fn count_moller_trumbore(&self, rays: &[Ray<T>]) -> usize {
+        let mut hits = 0;
+        let t_min: T = cast(0.0).unwrap();
+        let t_max: T = cast(1000.0).unwrap();
+        for ray in black_box(rays) {
+            for v in black_box(&self.triangles_vertices) {
+                if intersect::intersect_moller_trumbore(v[0], v[1], v[2], *ray, t_min, t_max)
+                    .is_some()
+                {
+                    hits += 1;
+                    break;
+                }
+            }
+        }
+        hits
+    }
+
+    pub fn initialize_observed(&self) -> usize {
+        let mut count = 0;
+        for v in black_box(&self.triangles_vertices) {
+            black_box(Triangle::new(v[0], v[1], v[2]).unwrap());
+            count += 1;
+        }
+        count
     }
 }

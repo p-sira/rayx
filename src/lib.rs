@@ -6,9 +6,10 @@
 //!
 //! ## Performance
 //!
-//! Baldwin-Weber consistently outperforms Moller-Trumbore in intersection time by 10-45%,
-//! depending on the scene, especially at f32 precision. The crossover point for the initialization overhead
-//! depends on the ray distribution and hardware. Learn more in the [README.md](https://github.com/p-sira/rayx?tab=readme-ov-file#performance).
+//! Intersection performance depends on the mesh size, floating-point precision, and ray
+//! distribution. Baldwin-Weber's precomputation is amortized across ray intersections,
+//! but its larger triangle representation can increase cache pressure on large meshes.
+//! See the [local benchmarks](https://github.com/p-sira/rayx?tab=readme-ov-file#performance).
 //!
 //! ## Usage
 //!
