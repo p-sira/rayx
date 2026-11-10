@@ -72,7 +72,9 @@ impl<T: Float + RealField + Copy> ModelBench<T> {
         }
 
         let mut rays = Vec::new();
-        let n = 50;
+        // Keep the CodSpeed simulation bounded even on the 100k-triangle mesh.
+        // Eight samples per axis provide both hits and misses at each mesh size.
+        let n = 8;
         let bx_0: T = cast(bounds_x.0).unwrap();
         let bx_1: T = cast(bounds_x.1).unwrap();
         let by_0: T = cast(bounds_y.0).unwrap();
@@ -95,12 +97,11 @@ impl<T: Float + RealField + Copy> ModelBench<T> {
             }
         }
 
-        // Keep the original 50x50 downward workload for historical comparisons.
-        // Add smaller, deterministic workloads to cover oblique rays and misses
-        // without multiplying the cost of the largest meshes.
+        // Smaller, deterministic workloads cover tilted rays and full misses
+        // without requiring millions of instrumented triangle tests.
         let mut oblique_rays = Vec::new();
         let mut miss_rays = Vec::new();
-        let n = 16;
+        let n = 4;
         let mesh_max_x = mesh
             .vertices
             .iter()
@@ -151,9 +152,9 @@ impl<T: Float + RealField + Copy> ModelBench<T> {
         let t_min: T = cast(0.0).unwrap();
         let t_max: T = cast(1000.0).unwrap();
         for (workload, rays) in [
-            ("axis", &self.rays),
-            ("oblique", &self.oblique_rays),
-            ("miss", &self.miss_rays),
+            ("axis_64", &self.rays),
+            ("oblique_16", &self.oblique_rays),
+            ("miss_16", &self.miss_rays),
         ] {
             let mut hits = 0;
             for ray in rays {
@@ -185,16 +186,14 @@ impl<T: Float + RealField + Copy> ModelBench<T> {
         let t_max: T = cast(1000.0).unwrap();
 
         for (workload, rays) in [
-            ("axis", &self.rays),
-            ("oblique", &self.oblique_rays),
-            ("miss", &self.miss_rays),
+            ("axis_64", &self.rays),
+            ("oblique_16", &self.oblique_rays),
+            ("miss_16", &self.miss_rays),
         ] {
-            let group_name = if workload == "axis" {
-                format!("{}/{}", self.name, precision_label)
-            } else {
-                format!("{}/{}/{}", self.name, precision_label, workload)
-            };
-            let mut group = c.benchmark_group(group_name);
+            // Ray counts changed; retain historical benchmark data under its
+            // original IDs and publish these as separate CodSpeed cases.
+            let mut group =
+                c.benchmark_group(format!("{}/{}/{}", self.name, precision_label, workload));
             if let Some(size) = self.size {
                 group.sample_size(size);
             }

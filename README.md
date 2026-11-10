@@ -42,7 +42,7 @@ let hit = tri.intersect(ray, 0.0, 10.0).unwrap();
 
 While Baldwin-Weber requires a one-time precomputation phase for a triangle, its cost can be amortized over many ray intersections. The crossover point depends on the ray distribution and hardware; `benches/crossover.rs` measures it with distinct rays.
 
-For larger scenes, **Baldwin-Weber consistently outperforms Moller-Trumbore in intersection time across various model complexities.** The performance gap is most pronounced at lower precisions (f32) where the reduced arithmetic complexity yields up to 45% speedup. The historical results below use 2,500 downward rays per model. The current benchmark also measures separate 256-ray oblique and miss workloads, with the same ray sets for both algorithms.
+For larger scenes, **Baldwin-Weber consistently outperforms Moller-Trumbore in intersection time across various model complexities.** The performance gap is most pronounced at lower precisions (f32) where the reduced arithmetic complexity yields up to 45% speedup. The historical results below use 2,500 downward rays per model. The current CodSpeed-friendly benchmark uses 64 downward rays, 16 oblique rays, and 16 guaranteed misses per model, with identical ray sets for both algorithms. Because the workload sizes changed, the new results have separate benchmark IDs.
 
 On a benchmark at **f32** precision on a single core [1] (2,500 rays vs meshes):
 
