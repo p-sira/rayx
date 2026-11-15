@@ -305,12 +305,12 @@ mod chunked_tests {
             })
         });
         for chunk_size in 1..=vertices.len() + 1 {
-            let mut scratch = vec![None; chunk_size];
-            let mut results = vec![None; rays.len()];
+            let mut scratch = [None; 5];
+            let mut results = [None; 3];
             intersect_baldwin_weber_chunked(
                 &vertices,
                 &rays,
-                &mut scratch,
+                &mut scratch[..chunk_size],
                 &mut results,
                 z,
                 one + one + one + one,

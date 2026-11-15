@@ -1,5 +1,9 @@
 # 0.3
 
+## 0.3.1
+
+- Fix compilation of chunked intersection tests in no default features test by using fixed-size buffers.
+
 ## 0.3.0
 
 **Performance**
